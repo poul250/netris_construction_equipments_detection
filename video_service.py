@@ -53,7 +53,6 @@ def aggregate_events(events: Dict[str, Any]) -> Dict[str, ObjectEventProperties]
 
 async def _process(req: Request):
     process_video(req)
-    #raise Exception()
     #requests.get("http://0.0.0.0:8000/process_video", json=req.dict(), headers=headers)
     start_time = time.time()
     json_path = req.path + "/info.json"
@@ -73,7 +72,7 @@ async def _process(req: Request):
         print(properties.dict())
         (
             ffmpeg
-            .input(f'{req.path}/src.{req.format}')
+            .input(f"{req.path}/src.{req.format}")
             .trim(start=properties.start_ts, end=properties.end_ts) #TODO: плз проверь потом что диапазон имеют все норм с размерностями (тут и риски от меня и от Вани)
             .crop(
                 x=properties.left_x,
@@ -84,6 +83,7 @@ async def _process(req: Request):
             .output(output_file_path)
             .run()
         )
+    open(f"{req.path}/ok", "w").close()
     
 
 @app.get("/process")
