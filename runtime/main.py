@@ -93,10 +93,6 @@ class GetResultObject(BaseModel):
     type: str
     timeline: List[GetResultEvent]
 
-class GetResultResponse(BaseModel):
-    result_json: str
-    objects: Dict[str, GetResultObject]
-
 
 def build_objects(info: dict) -> Dict[str, GetResultObject]:
     return []
@@ -134,9 +130,7 @@ async def get_result(task_id: str) -> dict:
     with open(info_json, 'r') as f:
         info = json.load(f)
 
-    return GetResultResponse(
-        result_json=make_file_url()
-    )
+    return info
 
 
 class GetInfoRequest(BaseModel):
