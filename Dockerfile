@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM ultralytics/yolov5
 
 RUN apt update && apt install -y npm python3-pip ffmpeg
 COPY requirements.txt /apps/
@@ -9,9 +9,9 @@ ADD runtime /apps/runtime
 ADD scripts /apps/scripts
 RUN chmod +x /apps/scripts/*
 
-ADD frontend2 /apps/frontend
-
+ADD frontend3 /apps/frontend
 ADD video /apps/video
+ADD model /apps/model
 
 RUN mkdir /data
 ENV DATA_DIR=/data

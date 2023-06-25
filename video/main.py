@@ -19,6 +19,7 @@ SMALL_INT = 0
 headers = {'Content-type': 'application/json'}
 
 service_port: int = None
+model_service_port: int = None
 
 
 class ProcessRequest(BaseModel):
@@ -28,8 +29,13 @@ class ProcessRequest(BaseModel):
 
 
 def process_video(req: ProcessRequest):  # затычка
-    with open(req.path + "/info.json", "w") as f:
-        json.dump([{"object_id": "car", "start_ts": [0], "end_ts": [20], "left_x": [10], "left_y": [10], "right_x": [100], "right_y": [100]}], f)
+    resp = requests.post(
+        'http://localhost:{model_service_port}/process_video',
+        json=req.json(),
+        headers=headers
+    )
+    if not resp.ok:
+        raise Exception('Failed to put ml service task')
 
 
 class ObjectEventProperties(BaseModel):
@@ -55,7 +61,7 @@ def aggregate_events(events: Dict[str, Any]) -> Dict[str, ObjectEventProperties]
 
 async def _process(req: ProcessRequest):
     process_video(req)
-    #requests.get("http://0.0.0.0:8000/process_video", json=req.dict(), headers=headers)
+
     start_time = time.time()
     json_path = req.path + "/info.json"
     while True:
@@ -95,15 +101,20 @@ async def process(req: ProcessRequest, background_tasks: BackgroundTasks) -> Non
 
 
 def init():
-    global base_dir
     global service_port
-    global runtime_port
+    global model_service_port
 
     service_port_raw = os.environ['VIDEO_SERVICE_PORT']
     if not service_port_raw:
         print("Failed to get runtime service port")
         exit(-1)
     service_port = int(service_port_raw)
+
+    model_service_port_raw = os.environ['MODEL_SERVICE_PORT']
+    if not model_service_port_raw:
+        print("Failed to get runtime service port")
+        exit(-1)
+    model_service_port = int(model_service_port_raw)
 
 
 def main():
