@@ -117,7 +117,7 @@ async def wait_result(task_id: str):
 
 
 @app.get("/get_result")
-async def get_result(task_id: str) -> dict:
+async def get_result(task_id: str, response: Response):
     task_dir = base_dir / task_id
     if not _check_task_done(task_dir):
         return Response(status=425)
@@ -130,6 +130,7 @@ async def get_result(task_id: str) -> dict:
     with open(info_json, 'r') as f:
         info = json.load(f)
 
+    response.headers['Content-Type'] = 'application/json'
     return info
 
 

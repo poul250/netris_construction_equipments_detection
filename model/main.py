@@ -42,6 +42,8 @@ async def _process_video(req: Request):
     counter = 0
     while True:
         ret, frame = video.read()
+        if not ret:
+            break
         counter += 1
         if counter % skip_frames == 0:
             box_features_raw = detector.detect(frame)

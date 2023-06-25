@@ -30,8 +30,8 @@ class ProcessRequest(BaseModel):
 
 def process_video(req: ProcessRequest):  # затычка
     resp = requests.post(
-        'http://localhost:{model_service_port}/process_video',
-        json=req.json(),
+        f'http://localhost:{model_service_port}/process_video',
+        json=req.dict(),
         headers=headers
     )
     if not resp.ok:
@@ -54,8 +54,8 @@ def aggregate_events(events: Dict[str, Any]) -> Dict[str, ObjectEventProperties]
         result[object_id].left_y = min(result[object_id].left_y, min(event["left_y"]))
         result[object_id].right_x = max(result[object_id].right_x, max(event["right_x"]))
         result[object_id].right_y = max(result[object_id].right_y, max(event["right_y"]))
-        result[object_id].start_ts = min(result[object_id].start_ts, min(event["start_ts"]))
-        result[object_id].end_ts = max(result[object_id].end_ts, max(event["left_x"]))
+        result[object_id].start_ts = min(result[object_id].start_ts, min(event["start_time"]))
+        result[object_id].end_ts = max(result[object_id].end_ts, max(event["end_time"]))
     return result
 
 
@@ -65,13 +65,13 @@ async def _process(req: ProcessRequest):
     start_time = time.time()
     json_path = req.path + "/info.json"
     while True:
-        time.sleep(1)
         if os.path.exists(json_path):
             with open(json_path, "r") as f:
                 data = json.load(f)
             break
         if time.time() - start_time > TASK_TIMEOUT:
             raise Exception("Execution timeout")
+        time.sleep(1)
 
     for object_id, properties in aggregate_events(data).items():
         output_file_path = f'{req.path}/{object_id}.{req.format}'

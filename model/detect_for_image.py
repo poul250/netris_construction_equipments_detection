@@ -55,7 +55,7 @@ class Detector:
             det[:, :4] = scale_coords(img_arr_resized.shape[2:], det[:, :4], img_arr.shape).round()
             result.append(det.cpu().detach().numpy())
 
-        return result[0]
+        return result
 
 if __name__ == '__main__':
     img_arr = cv2.imread("../../input/tmp-one-image/tmp_run2.png")
