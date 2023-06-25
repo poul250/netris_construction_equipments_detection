@@ -18,14 +18,16 @@ LARGE_INT = 2 ** 32
 SMALL_INT = 0
 headers = {'Content-type': 'application/json'}
 
+service_port: int = None
 
-class Request(BaseModel):
+
+class ProcessRequest(BaseModel):
     task_id: str
     format: str
     path: str
 
 
-def process_video(req: Request):  # затычка
+def process_video(req: ProcessRequest):  # затычка
     with open(req.path + "/info.json", "w") as f:
         json.dump([{"object_id": "car", "start_ts": [0], "end_ts": [20], "left_x": [10], "left_y": [10], "right_x": [100], "right_y": [100]}], f)
 
@@ -51,7 +53,7 @@ def aggregate_events(events: Dict[str, Any]) -> Dict[str, ObjectEventProperties]
     return result
 
 
-async def _process(req: Request):
+async def _process(req: ProcessRequest):
     process_video(req)
     #requests.get("http://0.0.0.0:8000/process_video", json=req.dict(), headers=headers)
     start_time = time.time()
@@ -64,7 +66,7 @@ async def _process(req: Request):
             break
         if time.time() - start_time > TASK_TIMEOUT:
             raise Exception("Execution timeout")
-    
+
     for object_id, properties in aggregate_events(data).items():
         output_file_path = f'{req.path}/{object_id}.{req.format}'
         if os.path.exists(output_file_path):
@@ -84,17 +86,29 @@ async def _process(req: Request):
             .run()
         )
     open(f"{req.path}/ok", "w").close()
-    
 
-@app.get("/process")
-async def process(req: Request, background_tasks: BackgroundTasks) -> None:
+
+@app.post("/process")
+async def process(req: ProcessRequest, background_tasks: BackgroundTasks) -> None:
     background_tasks.add_task(_process, req)
     return req
 
 
+def init():
+    global base_dir
+    global service_port
+    global runtime_port
+
+    service_port_raw = os.environ['VIDEO_SERVICE_PORT']
+    if not service_port_raw:
+        print("Failed to get runtime service port")
+        exit(-1)
+    service_port = int(service_port_raw)
+
 
 def main():
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    init()
+    uvicorn.run(app, host="0.0.0.0", port=service_port)
 
 if __name__ == "__main__":
     main()

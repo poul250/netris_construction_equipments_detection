@@ -1,6 +1,6 @@
 FROM python:3.10
 
-RUN apt update && apt install -y npm python3-pip
+RUN apt update && apt install -y npm python3-pip ffmpeg
 COPY requirements.txt /apps/
 RUN python -m pip install --no-cache-dir -r /apps/requirements.txt
 
@@ -10,6 +10,8 @@ ADD scripts /apps/scripts
 RUN chmod +x /apps/scripts/*
 
 ADD frontend2 /apps/frontend
+
+ADD video /apps/video
 
 RUN mkdir /data
 ENV DATA_DIR=/data
