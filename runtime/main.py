@@ -6,6 +6,7 @@ import json
 from typing import Dict, List
 from fastapi import FastAPI, File, UploadFile, Response, Header
 from fastapi.responses import StreamingResponse, HTMLResponse, RedirectResponse
+from starlette.responses import FileResponse
 from clients import VideoServiceClient
 from pydantic import BaseModel
 import starlette.status as status
@@ -130,7 +131,12 @@ async def get_result(task_id: str, response: Response):
     with open(info_json, 'r') as f:
         info = json.load(f)
 
+    for obj in info:
+        file_name = f'{obj["object_id"]}.mp4'
+        obj['url'] = f'http://localhost:8100/video?task_id={task_id}&video_name={file_name}'
+
     response.headers['Content-Type'] = 'application/json'
+
     return info
 
 
@@ -165,29 +171,18 @@ class GetVideoRequest(BaseModel):
 
 
 @app.get("/video")
-async def get_video(data: GetVideoRequest, range: str = Header(None)):
-    task_dir: pathlib.Path = base_dir / data.task_id
+async def get_video(task_id: str, video_name: str, range: str = Header(None)):
+    task_dir: pathlib.Path = base_dir / task_id
 
     if not task_dir.exists():
         return Response(status_code=404)
 
-    video_path: pathlib.Path = task_dir / data.video_name
+    video_path: pathlib.Path = task_dir / video_name
     if not video_path.exists():
         return Response(status_code=404)
 
-    start, end = range.replace("bytes=", "").split("-")
-    start = int(start)
-    end = int(end) if end else start + VIDEO_CHUNK_SIZE
-    with open(video_path, "rb") as video:
-        video.seek(start)
-        data = video.read(end - start)
-        filesize = str(video_path.stat().st_size)
+    return FileResponse(video_path, media_type='application/octet-stream', filename='video.mp4')
 
-        headers = {
-            'Content-Range': f'bytes {str(start)}-{str(end)}/{filesize}',
-            'Accept-Ranges': 'bytes'
-        }
-        return Response(data, status_code=206, headers=headers, media_type="video/mp4")
 
 def parse_args():
     global base_dir
